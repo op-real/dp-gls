@@ -1,0 +1,1 @@
+  Source train, iter: 00071, sec: 13, loss: 0.00087, accuracy: 4320/4321, precision: 99.97686

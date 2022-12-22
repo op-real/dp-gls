@@ -363,6 +363,66 @@ class LeNet(nn.Module):
     def output_num(self):
         return self.__in_features
 
+class WNDisc(nn.Module):
+  def __init__(self, in_feature, hidden_size, sigmoid=True):
+    super(WNDisc, self).__init__()
+    self.ad_layer1 = nn.Linear(in_feature, hidden_size)
+    self.ad_layer2 = nn.Linear(hidden_size, hidden_size)
+    self.ad_layer3 = nn.Linear(hidden_size, 1)
+    self.relu1 = nn.ReLU()
+    self.relu2 = nn.ReLU()
+    self.dropout1 = nn.Dropout(0.5)
+    self.dropout2 = nn.Dropout(0.5)
+    self.sigmoid = sigmoid
+    self.apply(init_weights)
+
+  def forward(self, x):
+    x = x * 1.0
+    x = self.ad_layer1(x)
+    x = self.relu1(x)
+    x = self.dropout1(x)
+    x = self.ad_layer2(x)
+    x = self.relu2(x)
+    x = self.dropout2(x)
+    y = self.ad_layer3(x)
+    if self.sigmoid:
+        y = nn.Sigmoid()(y)
+    y = y.reshape(-1)
+    return y
+
+  def output_num(self):
+    return 1
+
+class WNGen(nn.Module):
+  def __init__(self, in_feature, hidden_size):
+    super(WNGen, self).__init__()
+    self.ad_layer1 = nn.Linear(in_feature, hidden_size)
+    self.ad_layer2 = nn.Linear(hidden_size, hidden_size)
+    self.ad_layer3 = nn.Linear(hidden_size, 1)
+    self.relu1 = nn.ReLU()
+    self.relu2 = nn.ReLU()
+    self.dropout1 = nn.Dropout(0.5)
+    self.dropout2 = nn.Dropout(0.5)
+    self.softmax = nn.Softmax(dim=0)
+    self.apply(init_weights)
+
+  def forward(self, x):
+    x = x * 1.0
+    x = self.ad_layer1(x)
+    x = self.relu1(x)
+    x = self.dropout1(x)
+    x = self.ad_layer2(x)
+    x = self.relu2(x)
+    x = self.dropout2(x)
+    y = self.ad_layer3(x)
+    y = y.reshape(-1)
+    y = self.softmax(y)
+    y = torch.mul(y, y.size(dim=0))
+
+    return y
+
+  def output_num(self):
+    return 1
 
 class AdversarialNetwork(nn.Module):
   def __init__(self, in_feature, hidden_size, sigmoid=True):
@@ -497,8 +557,7 @@ def create_im_weights_update(class_inst, ma, class_num):
 
     # Label importance weights.
     class_inst.ma = ma
-    class_inst.im_weights = nn.Parameter(
-        torch.ones(class_num, 1), requires_grad=False)
+    class_inst.im_weights = nn.Parameter(torch.ones(class_num, 1), requires_grad=False)
 
     def im_weights_update(source_y, target_y, cov, device, inst=class_inst):
         """
