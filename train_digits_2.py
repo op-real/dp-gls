@@ -32,9 +32,9 @@ def train_wn(args, model, source_samples, target_samples, wn_disc, wn_gen, optim
     len_target = target_samples.shape[0]
 
     size = max(len_source, len_target)
-    num_iter = int(size / args.batch_size)
+    num_iter = int(size / 256)
 
-    for _ in range(num_iter):
+    for _ in range(5):
         source_idx = np.random.choice(len_source, args.batch_size)
         target_idx = np.random.choice(len_target, args.batch_size)
         data_source = source_samples[source_idx]
@@ -83,6 +83,7 @@ def train_wn(args, model, source_samples, target_samples, wn_disc, wn_gen, optim
 def train(args, model, ad_net, source_samples, source_labels, target_samples, target_labels, 
           optimizer, optimizer_ad, epoch, start_epoch, method, source_label_distribution, 
           out_wei_file, cov_mat, pseudo_target_label, class_weights, true_weights, wn_disc, wn_gen, optimizer_wnd, optimizer_wng):
+
     cov_mat[:] = 0.0
     pseudo_target_label[:] = 0.0
 
@@ -92,13 +93,14 @@ def train(args, model, ad_net, source_samples, source_labels, target_samples, ta
     size = max(len_source, len_target)
     num_iter = int(size / args.batch_size)
 
-    # learn/update weights for WNDANN
-    if 'WN' in method and epoch > start_epoch:
-        train_wn(args, model, source_samples, target_samples, wn_disc, wn_gen, optimizer_wnd, optimizer_wng, nn.BCEWithLogitsLoss(), nn.BCEWithLogitsLoss(reduction='none'))
-    model.train()
-    wn_gen.eval()
-
     for batch_idx in range(num_iter):
+        # learn/update weights for WNDANN
+        if 'WN' in method and epoch > start_epoch:
+            train_wn(args, model, source_samples, target_samples, wn_disc, wn_gen, optimizer_wnd, optimizer_wng, nn.BCEWithLogitsLoss(), nn.BCEWithLogitsLoss(reduction='none'))
+
+        wn_gen.eval()
+        model.train()
+
         source_idx = np.random.choice(len_source, args.batch_size)
         target_idx = np.random.choice(len_target, args.batch_size)
         data_source, label_source = source_samples[source_idx], source_labels[source_idx]
@@ -176,7 +178,6 @@ def train(args, model, ad_net, source_samples, source_labels, target_samples, ta
                 loss += args.mu * dloss
 
             elif 'WNDANN' in method:
-                # loss += loss_func.DANN(feature, ad_net, args.device)
                 dloss = loss_func.IWDAN(feature, ad_net, weights)
                 loss += args.mu * dloss
 

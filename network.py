@@ -404,6 +404,8 @@ class WNGen(nn.Module):
     self.dropout1 = nn.Dropout(0.5)
     self.dropout2 = nn.Dropout(0.5)
     self.softmax = nn.Softmax(dim=0)
+    self.sigmoid = nn.Sigmoid()
+    self.leakyRelu = nn.LeakyReLU(0)
     self.apply(init_weights)
 
   def forward(self, x):
@@ -415,10 +417,16 @@ class WNGen(nn.Module):
     x = self.relu2(x)
     x = self.dropout2(x)
     y = self.ad_layer3(x)
+    y = self.sigmoid(y)
+    y = torch.clamp(y, min=0.05)
     y = y.reshape(-1)
-    y = self.softmax(y)
-    y = torch.mul(y, y.size(dim=0))
+    # y = self.softmax(y)
+    # y = torch.mul(y, y.size(dim=0))
 
+    # y = torch.clamp(y, min=-2., max=3.)
+    # y = self.softmax(y)
+    # y = torch.mul(y, y.size(dim=0))
+    
     return y
 
   def output_num(self):
